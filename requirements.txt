@@ -1,0 +1,4 @@
+python-dotenv
+openai
+azure-ai-vision-imageanalysis
+flask
