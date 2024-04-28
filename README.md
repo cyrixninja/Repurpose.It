@@ -33,3 +33,18 @@ That we were able to build Repupose.It stands proud with its achievements in sea
 
 # What we learned
 We learned to balance technological innovation with sustainability goals and the importance of saving our earth
+
+
+# Screenshots
+## Index Page
+![Img](screenshots/1.png)
+![Img](screenshots/2.png)
+![Img](screenshots/3.png)
+## Repurpose Page
+![Img](screenshots/4.png)
+![Img](screenshots/5.png)
+## Marketplace Page
+![Img](screenshots/6.png)
+![Img](screenshots/7.png)
+## MongoDB
+![Img](screenshots/8.png)

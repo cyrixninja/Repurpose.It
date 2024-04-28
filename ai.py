@@ -53,20 +53,15 @@ def Suggest_Use(Object):
     )
     MESSAGES = [
     {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "What can i make with "+Object+" ?"},
+    {"role": "user", "content": "How can I repurpose or reuse following object :"+Object+" ?"},
     ]
     completion = client.chat.completions.create(
     model=MODEL_NAME,
     messages=MESSAGES,
     )
     print(completion.model_dump_json(indent=2))
+    return completion.choices[0].message.content
 
-
-with open("sample.jpg", "rb") as f:
-    image_data = f.read()
-
-Object = Image_Analysis(image_data)
-Suggest_Use(Object)
 # Tests
 # Load image to analyze into a 'bytes' object
 #with open("sample.jpg", "rb") as f:

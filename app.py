@@ -1,4 +1,4 @@
-
+import ai
 #Flask
 from flask import  Flask,redirect, render_template, session, url_for, request, flash,send_from_directory
 from werkzeug.utils import secure_filename
@@ -54,14 +54,30 @@ def index():
         print(name)
     return render_template('index.html', **locals())
 
-@app.route('/repurpose')
+UPLOAD_FOLDER = 'uploads'
+
+# Create uploads directory if it doesn't exist
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+@app.route('/repurpose', methods=['GET', 'POST'])
 def repurpose():
-    if "user_info" not in session:
-        return redirect(url_for("login"))
-    else:
-        name = (session.get("user_info")['name'])
-        print("Hello World")
-    return render_template('repurpose.html', **locals())
+    result = ""
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return 'No file part'
+        file = request.files['file']
+        if file.filename == '':
+            return 'No selected file'
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(UPLOAD_FOLDER, filename))  # save file to uploads directory
+            with open(os.path.join(UPLOAD_FOLDER, filename), 'rb') as f:
+                image_data = f.read()
+            object = ai.Image_Analysis(image_data)
+            result = ai.Suggest_Use(object)
+            result = result.replace('\n', '<br>').replace('**', '<strong>').replace('**', '</strong>')
+    return render_template('repurpose.html', result=result)
 
 
 ## Marketplace Routes
@@ -75,12 +91,12 @@ def uploaded_file(filename):
 
 @app.route('/sell', methods=["GET", "POST"])
 def sell():
+    currproducts = db.products.find()
     if "user_info" not in session:
         return redirect(url_for("login"))
     else:
         name = (session.get("user_info")['name']) 
         email = (session.get("user_info")['email'])
-        products = db.products.find()
         if request.method == 'POST':
             # check if the post request has the file part
             if 'file' not in request.files:
@@ -96,8 +112,8 @@ def sell():
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 product_description = request.form.get('description')
-                product = {'description': product_description, 'image': filename, 'email': email, 'name': name}
-                products.insert_one(product)
+                productupload = {'description': product_description, 'image': filename, 'email': email, 'name': name}
+                products.insert_one(productupload)
                 return redirect(url_for('sell'))
     return render_template('sell.html', **locals())
 

@@ -120,7 +120,7 @@
     <section class="section">
       <div class="container">
         <div class="row">
-          {% for product in products %}
+          {% for product in currproducts %}
             <div class="col-lg-4">
               <div class="card">
                 <img src="{{ url_for('uploaded_file', filename=product.image) }}" class="card-img-top" alt="Product image">
