@@ -1,14 +1,29 @@
 
 #Flask
-from flask import  Flask,redirect, render_template, session, url_for
+from flask import  Flask,redirect, render_template, session, url_for, request, flash,send_from_directory
+from werkzeug.utils import secure_filename
+import os
 # Authentication
 import json
 from os import environ as env
 from urllib.parse import quote_plus, urlencode
 from authlib.integrations.flask_client import OAuth
 from dotenv import find_dotenv, load_dotenv
+#MongoDB
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
+from bson.objectid import ObjectId
+client = MongoClient(env.get("MONGO_URI"))
+db = client['Marketplace']
+marketplace = db['marketplace']
+products = db['products']
+# Marketplace Uploads
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'marketplace_uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-# Load the .env file
+    
 ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
@@ -16,7 +31,7 @@ if ENV_FILE:
 #Initialize Flask
 app = Flask(__name__)
 app.secret_key = env.get("APP_SECRET_KEY")
-
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Auth0
 oauth = OAuth(app)
 oauth.register(
@@ -48,13 +63,42 @@ def repurpose():
         print("Hello World")
     return render_template('repurpose.html', **locals())
 
-@app.route('/sell')
+
+## Marketplace Routes
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/sell', methods=["GET", "POST"])
 def sell():
     if "user_info" not in session:
         return redirect(url_for("login"))
     else:
         name = (session.get("user_info")['name']) 
-        print("Hello World")
+        email = (session.get("user_info")['email'])
+        products = db.products.find()
+        if request.method == 'POST':
+            # check if the post request has the file part
+            if 'file' not in request.files:
+                flash('No file part')
+                return redirect(request.url)
+            file = request.files['file']
+            # if user does not select file, browser also
+            # submit an empty part without filename
+            if file.filename == '':
+                flash('No selected file')
+                return redirect(request.url)
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                product_description = request.form.get('description')
+                product = {'description': product_description, 'image': filename, 'email': email, 'name': name}
+                products.insert_one(product)
+                return redirect(url_for('sell'))
     return render_template('sell.html', **locals())
 
 # Authentication Routes
